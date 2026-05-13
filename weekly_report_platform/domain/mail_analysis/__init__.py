@@ -1,0 +1,1 @@
+"""Mail analysis package."""

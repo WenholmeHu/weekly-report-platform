@@ -1,0 +1,40 @@
+{
+  "fields": {
+    "message_id": {
+      "fieldName": "邮件标识",
+      "type": "text",
+      "required": false,
+      "sourcePath": "message_id"
+    },
+    "subject": {
+      "fieldName": "项目周报",
+      "type": "text",
+      "required": true,
+      "sourcePath": "subject"
+    },
+    "progress_analysis": {
+      "fieldName": "进度分析",
+      "type": "text",
+      "required": false,
+      "sourcePath": "analysis.进度抽取结果.分析结果"
+    },
+    "risk_details": {
+      "fieldName": "风险详情",
+      "type": "text",
+      "required": false,
+      "sourcePath": "analysis.风险抽取结果.风险详情"
+    },
+    "hidden_risks": {
+      "fieldName": "隐藏风险",
+      "type": "text",
+      "required": false,
+      "sourcePath": "analysis.隐藏风险"
+    }
+  },
+  "targets": [
+    {
+      "baseId": "ZX6GRezwJl7DbxOxirwj3wGzVdqbropQ",
+      "tableId": "hERWDMS"
+    }
+  ]
+}

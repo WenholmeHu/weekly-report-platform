@@ -1,0 +1,9 @@
+python-dotenv
+httpx
+markitdown
+openpyxl
+python-docx
+PyMuPDF
+loguru
+fastapi
+uvicorn

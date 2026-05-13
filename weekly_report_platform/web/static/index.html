@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>周报同步控制台</title>
+    <link rel="stylesheet" href="/static/phase5-app.css?v=20260513-9" />
+  </head>
+  <body>
+    <main class="workspace-shell">
+      <header class="workspace-header">
+        <p class="eyebrow">Weekly Report</p>
+        <h1>周报同步控制台</h1>
+        <p class="workspace-lead">按本次参数抽取周报；开始日期留空时扫描邮箱历史内容。</p>
+      </header>
+
+      <section class="workspace-grid">
+        <section class="panel action-panel">
+          <div class="block-heading">
+            <p class="section-tag">执行</p>
+            <h2>单次抽取</h2>
+          </div>
+
+          <form id="task-form" class="rule-form">
+            <label class="field">
+              <span>开始日期（可选）</span>
+              <input type="date" name="start_date" />
+              <small class="field-hint">不填写则从邮箱全部历史邮件中抽取</small>
+            </label>
+
+            <label class="field">
+              <span>主题关键字</span>
+              <input type="text" name="subject_keyword" value="周报" placeholder="默认：周报" />
+            </label>
+
+            <label class="field">
+              <span>抽取数量（可选）</span>
+              <input type="number" name="max_emails" min="1" placeholder="不填则抽取全部" />
+            </label>
+
+            <label class="checkbox-field">
+              <input type="checkbox" name="force_refresh" />
+              <span>重新处理历史邮件</span>
+            </label>
+
+            <div class="button-column action-buttons">
+              <button id="submit-button" class="primary-button" type="submit">开始抽取</button>
+              <button id="stop-task-button" class="danger-button" type="button">停止当前任务</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel task-panel">
+          <div class="block-heading">
+            <p class="section-tag">任务</p>
+            <h2>当前任务</h2>
+          </div>
+
+          <article class="task-card status-card-primary">
+            <div class="task-meta">
+              <div class="task-meta-item">
+                <span class="task-meta-label">状态</span>
+                <strong id="task-status-value" class="task-status-value">未开始</strong>
+              </div>
+              <div class="task-meta-item">
+                <span class="task-meta-label">任务编号</span>
+                <strong id="run-id-value" class="task-run-id" title="-">-</strong>
+              </div>
+            </div>
+            <p id="task-status-note" class="status-note">当前没有运行中的任务</p>
+            <p id="message-banner" class="message-banner" aria-live="polite">等待执行</p>
+          </article>
+        </section>
+
+        <section class="right-stack">
+          <section class="panel summary-panel">
+            <div class="block-heading">
+              <p class="section-tag">统计</p>
+              <h2>处理概览</h2>
+            </div>
+
+            <div class="summary-grid">
+              <article class="summary-card">
+                <span class="summary-label">总邮件</span>
+                <strong class="summary-value" data-field="total_emails">0</strong>
+              </article>
+              <article class="summary-card">
+                <span class="summary-label">已处理</span>
+                <strong class="summary-value" data-field="processed_emails">0</strong>
+              </article>
+              <article class="summary-card accent-success">
+                <span class="summary-label">成功</span>
+                <strong class="summary-value" data-field="synced_count">0</strong>
+              </article>
+              <article class="summary-card accent-warn">
+                <span class="summary-label">跳过</span>
+                <strong class="summary-value" data-field="skipped_count">0</strong>
+              </article>
+              <article class="summary-card accent-fail">
+                <span class="summary-label">失败</span>
+                <strong class="summary-value" data-field="failed_count">0</strong>
+              </article>
+            </div>
+          </section>
+
+          <section class="panel records-panel">
+            <div class="block-heading">
+              <p class="section-tag">邮件</p>
+              <h2>处理记录</h2>
+            </div>
+
+            <p id="mail-items-empty" class="mail-items-empty">暂无记录</p>
+            <div id="mail-items-list" class="mail-items-list" aria-live="polite"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="/static/phase5-app.js?v=20260513-9"></script>
+  </body>
+</html>
