@@ -143,3 +143,42 @@ def test_wrp_find_emails_by_filter_allows_no_start_date(monkeypatch) -> None:
     result = service.find_emails_by_filter(start_date=None, subject_keyword="", max_emails=None)
 
     assert [item["id"] for item in result] == ["2", "1"]
+
+
+# ---- format_email_for_analysis 图片描述测试 ----
+
+def test_wrp_format_email_with_image_descriptions_includes_image_content_section() -> None:
+    """image_descriptions 非空时，formatted_content 应包含 [Image Content] 段落。"""
+    email_data = {
+        "subject": "项目周报",
+        "from": "pm@example.com",
+        "date": "Mon, 28 Apr 2026 20:00:00 +0800",
+        "text_body": "本周进度正常。",
+        "html_body": "",
+        "attachments": [],
+    }
+    descriptions = ["[chart.png]: 进度图表，3/5任务完成", "[risk.png]: 风险矩阵截图"]
+    result = email_parser.format_email_for_analysis(email_data, image_descriptions=descriptions)
+    assert "[Image Content]" in result
+    assert "[chart.png]: 进度图表" in result
+    assert "[risk.png]: 风险矩阵截图" in result
+
+
+def test_wrp_format_email_without_image_descriptions_has_no_image_content_section() -> None:
+    """image_descriptions 为空或 None 时，formatted_content 不包含 [Image Content] 段落。"""
+    email_data = {
+        "subject": "项目周报",
+        "from": "pm@example.com",
+        "date": "Mon, 28 Apr 2026 20:00:00 +0800",
+        "text_body": "本周进度正常。",
+        "html_body": "",
+        "attachments": [],
+    }
+    result_none = email_parser.format_email_for_analysis(email_data, image_descriptions=None)
+    assert "[Image Content]" not in result_none
+
+    result_empty = email_parser.format_email_for_analysis(email_data, image_descriptions=[])
+    assert "[Image Content]" not in result_empty
+
+    result_default = email_parser.format_email_for_analysis(email_data)
+    assert "[Image Content]" not in result_default

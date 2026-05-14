@@ -183,8 +183,9 @@ class EmailService:
             text_body = ""
             html_body = ""
             attachments = []
+            inline_images = []
             for part in message.walk():
-                # 按“纯文本正文 / HTML 正文 / 附件”三类处理。
+                # 按"纯文本正文 / HTML 正文 / 附件 / inline 图片"四类处理。
                 content_type = part.get_content_type()
                 content_disposition = str(part.get("Content-Disposition", ""))
 
@@ -212,6 +213,18 @@ class EmailService:
                                     "size": len(decoded_data),
                                 }
                             )
+                elif content_type.startswith("image/") and "attachment" not in content_disposition:
+                    content_id = part.get("Content-ID", "").strip("<>")
+                    decoded_data = part.get_payload(decode=True)
+                    if decoded_data:
+                        inline_images.append(
+                            {
+                                "content_id": content_id,
+                                "content_type": content_type,
+                                "data": decoded_data,
+                                "size": len(decoded_data),
+                            }
+                        )
 
             return {
                 "subject": subject,
@@ -223,6 +236,7 @@ class EmailService:
                 "html_body": html_body,
                 "message_id": message_id,
                 "attachments": attachments,
+                "inline_images": inline_images,
             }
         except Exception as exc:
             logger.error(f"Failed to parse email: {exc}")
@@ -291,7 +305,11 @@ class EmailService:
         return matched_emails
 
 
-def format_email_for_analysis(email_data: dict[str, Any]) -> str:
+def format_email_for_analysis(
+    email_data: dict[str, Any],
+    *,
+    image_descriptions: list[str] | None = None,
+) -> str:
     """把解析后的邮件对象转换成给大模型使用的统一文本。
 
     输入 `email_data` 通常包含：
@@ -301,8 +319,9 @@ def format_email_for_analysis(email_data: dict[str, Any]) -> str:
 
     返回值：
     - 一个 `str`
-    - 结构上会分成邮件元信息、正文、附件三大段
+    - 结构上会分成邮件元信息、正文、图片内容（可选）、附件三大段
     - 如果存在附件，会把每个可解析附件的文本都拼接进去
+    - 如果 `image_descriptions` 非空，在 [Email Body] 后插入 [Image Content] 段落
     """
     content_parts = []
 
@@ -333,6 +352,15 @@ def format_email_for_analysis(email_data: dict[str, Any]) -> str:
     else:
         content_parts.append("[Empty email body; this email may contain attachments only]")
     content_parts.append("")
+
+    # 注入图片描述（可选）
+    if image_descriptions:
+        content_parts.append("=" * 60)
+        content_parts.append("[Image Content]")
+        content_parts.append("=" * 60)
+        for desc in image_descriptions:
+            content_parts.append(desc)
+        content_parts.append("")
 
     attachments = email_data.get("attachments", [])
     if attachments:

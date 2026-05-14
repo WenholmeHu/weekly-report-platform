@@ -16,6 +16,9 @@ from pathlib import Path
 from typing import Any
 
 from weekly_report_platform.domain.mail_analysis.email_parser import email_service, format_email_for_analysis
+from weekly_report_platform.domain.mail_analysis.image_analyzer import analyze_images
+from weekly_report_platform.domain.mail_analysis.image_extractor import extract_images_from_email
+from weekly_report_platform.domain.mail_analysis.image_filter import filter_images
 from weekly_report_platform.domain.mail_analysis.prompts import process_email_analysis_with_errors
 from weekly_report_platform.infrastructure.logging import logger
 
@@ -175,11 +178,35 @@ async def analyze_email(
         )
 
     try:
-        formatted_content = format_email_for_analysis(email_data)
+        # 图片分析（不阻塞主流程，失败不影响文本分析）
+        image_descriptions: list[str] = []
+        image_analysis_error = ""
+        try:
+            raw_images = extract_images_from_email(email_data)
+            logger.info(f"Extracted {len(raw_images)} raw images from email")
+            valid_images = filter_images(raw_images)
+            logger.info(f"Filtered to {len(valid_images)} valid images")
+            if valid_images:
+                results = await analyze_images(valid_images)
+                for r in results:
+                    if r.description:
+                        image_descriptions.append(f"[{r.filename}]: {r.description}")
+                        logger.info(f"Image analysis [{r.filename}]: {r.description}")
+                image_errors = [r.error for r in results if r.error]
+                if image_errors:
+                    image_analysis_error = "image analysis errors: " + "; ".join(image_errors)
+                    logger.warning(f"Email image analysis errors: {image_analysis_error}")
+        except Exception as exc:
+            image_analysis_error = f"image analysis failed: {exc}"
+            logger.warning(f"Email image analysis failed: {exc}")
+
+        formatted_content = format_email_for_analysis(email_data, image_descriptions=image_descriptions)
         analysis, errors = await process_email_analysis_with_errors(
             formatted_content,
             str(email_data.get("subject", "")),
         )
+        if image_analysis_error:
+            errors.append(image_analysis_error)
         error_text = "; ".join(errors)
         payload = build_output_payload(email_data, analysis, error=error_text)
         if output_path is not None:

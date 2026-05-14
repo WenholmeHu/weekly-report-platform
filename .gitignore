@@ -1,3 +1,8 @@
 .venv
 .env
 **/__pycache__/
+.pytest_cache
+.tmp_testdata
+.venv
+runs
+.state

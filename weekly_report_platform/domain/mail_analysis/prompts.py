@@ -75,6 +75,8 @@ Rules:
 - Preserve important source text excerpts when possible.
 - If only one source exists, set consistency analysis to "Not applicable".
 - Focus on summary/progress sections only.
+- If [Image Content] section is present, also extract progress information from image descriptions.
+- Image descriptions are provided by a vision model; treat them as supplementary to the email text.
 
 Input:
 {formatted_full_text}
@@ -100,6 +102,8 @@ Return strict JSON with the exact keys below.
 
 Input:
 {formatted_full_text}
+
+- If [Image Content] section is present, also identify risks mentioned in image descriptions.
 
 Output JSON schema:
 {{
@@ -131,6 +135,8 @@ Known risks:
 
 Input:
 {formatted_full_text}
+
+- Consider image descriptions as part of the input when identifying hidden risks.
 
 Return a strict JSON array:
 [

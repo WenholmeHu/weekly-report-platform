@@ -46,6 +46,22 @@ class LLMSettings:
     n: int = field(default_factory=lambda: int(os.getenv("LLM_N", "1")))
 
 
+@dataclass
+class VisionSettings:
+    """多模态 LLM（图片分析）配置，独立于文本 LLM。
+
+    参考 mail-risk-pipeline 项目：HundSun 内部 LLM 网关不支持 OpenAI 风格
+    content 数组格式，需通过外部 OpenAI-compatible vision 网关进行图片分析。
+    """
+
+    url: str = field(default_factory=lambda: os.getenv("VISION_URL", ""))
+    model: str = field(default_factory=lambda: os.getenv("VISION_MODEL", "qwen3.6-plus"))
+    authorization: str = field(default_factory=lambda: os.getenv("VISION_AUTHORIZATION", ""))
+    max_tokens: int = field(default_factory=lambda: int(os.getenv("VISION_MAX_TOKENS", "8000")))
+    temperature: float = field(default_factory=lambda: float(os.getenv("VISION_TEMPERATURE", "0.01")))
+    timeout: float = field(default_factory=lambda: float(os.getenv("VISION_TIMEOUT", "300.0")))
+
+
 def build_default_fields() -> dict[str, dict[str, object]]:
     """构造默认的钉钉字段映射。"""
     return {
