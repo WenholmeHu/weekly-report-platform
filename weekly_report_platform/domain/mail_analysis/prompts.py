@@ -13,7 +13,6 @@ from weekly_report_platform.infrastructure.logging import logger
 
 PROGRESS_KEY = "进度抽取结果"
 RISK_KEY = "风险抽取结果"
-HIDDEN_RISK_KEY = "隐藏风险"
 ANALYSIS_RESULT_KEY = "分析结果"
 SUMMARY_KEY = "综合总结"
 CONSISTENCY_KEY = "一致性分析"
@@ -25,8 +24,16 @@ RISK_DESC_KEY = "风险描述"
 RISK_TYPE_KEY = "风险类型"
 RISK_ACTION_KEY = "风险措施和最新进展"
 RISK_OWNER_KEY = "风险责任人"
-RISK_SUMMARY_KEY = "风险归纳"
 SEQ_KEY = "序号"
+PROJECT_NAME_KEY = "项目名称"
+PROJECT_CODE_KEY = "项目编号"
+PROJECT_CYCLE_KEY = "项目周报周期"
+PROJECT_PROGRESS_KEY = "项目进度"
+MILESTONE_KEY = "里程碑"
+WEEKLY_SUMMARY_KEY = "本周小结"
+NEXT_WEEK_PLAN_KEY = "下周计划"
+RISK_LEVEL_KEY = "风险等级"
+RISK_DUE_DATE_KEY = "计划解决日期"
 
 
 def clean_json_response(response: str) -> str:
@@ -75,6 +82,10 @@ Rules:
 - Preserve important source text excerpts when possible.
 - If only one source exists, set consistency analysis to "Not applicable".
 - Focus on summary/progress sections only.
+- For "项目进度", extract a number between 0 and 1 representing the project completion percentage.
+  Look for progress indicators like "项目PC", "项目进度" in the email body or attachments.
+  Convert percentage values (e.g., "75%" -> 0.75) to decimal form.
+- For other fields, extract from the email content and attachments as appropriate.
 
 Input:
 {formatted_full_text}
@@ -87,7 +98,14 @@ Output JSON schema:
   "{ANALYSIS_RESULT_KEY}": {{
     "{SUMMARY_KEY}": "concise summary",
     "{CONSISTENCY_KEY}": "consistency result"
-  }}
+  }},
+  "{PROJECT_NAME_KEY}": "project name",
+  "{PROJECT_CODE_KEY}": "project code",
+  "{PROJECT_CYCLE_KEY}": "project weekly report cycle (e.g. 2026-05-12 ~ 2026-05-18)",
+  "{PROJECT_PROGRESS_KEY}": 0.75,
+  "{MILESTONE_KEY}": "key milestone information",
+  "{WEEKLY_SUMMARY_KEY}": "this week summary",
+  "{NEXT_WEEK_PLAN_KEY}": "next week plan"
 }}
 """.strip()
 
@@ -110,39 +128,15 @@ Output JSON schema:
   "{RISK_DETAIL_KEY}": [
     {{
       "{SEQ_KEY}": 1,
-      "{RISK_DESC_KEY}": "risk description",
       "{RISK_TYPE_KEY}": "risk type",
-      "{RISK_ACTION_KEY}": "mitigation and latest progress",
-      "{RISK_OWNER_KEY}": "owner"
+      "{RISK_LEVEL_KEY}": "high/medium/low",
+      "{RISK_DESC_KEY}": "risk description",
+      "{RISK_ACTION_KEY}": "mitigation measures",
+      "{RISK_OWNER_KEY}": "owner",
+      "{RISK_DUE_DATE_KEY}": "planned resolution date"
     }}
   ]
 }}
-""".strip()
-
-
-def get_hidden_risk_extract_prompt(present_risks: str, formatted_full_text: str) -> str:
-    """生成隐藏风险抽取提示词。"""
-    return f"""
-You are identifying hidden risks outside the explicitly labeled risk sections.
-Avoid duplicates with the known risks below.
-
-Known risks:
-{present_risks}
-
-Input:
-{formatted_full_text}
-
-Return a strict JSON array:
-[
-  {{
-    "{SEQ_KEY}": 1,
-    "{SOURCE_KEY}": "body-or-attachment",
-    "{RISK_DESC_KEY}": "hidden risk description",
-    "{RISK_TYPE_KEY}": "risk type",
-    "{RISK_SUMMARY_KEY}": "short hidden risk summary",
-    "{RISK_ACTION_KEY}": "mitigation and latest progress"
-  }}
-]
 """.strip()
 
 
@@ -176,42 +170,8 @@ async def extract_risk_from_report(week_report_md: str) -> tuple[dict[str, Any] 
         return None, message
 
 
-async def extract_hidden_risk_from_report(
-    week_report_md: str,
-    risk_result: dict[str, Any] | None,
-) -> tuple[list[dict[str, Any]] | None, str | None]:
-    """抽取隐藏风险，并尽量避免与显式风险重复。"""
-    try:
-        present_risks = ""
-        if risk_result:
-            raw_extractions = risk_result.get(RAW_EXTRACT_KEY, [])
-            if isinstance(raw_extractions, list) and raw_extractions:
-                rows = []
-                for extraction in raw_extractions:
-                    if not isinstance(extraction, dict):
-                        continue
-                    source = extraction.get(SOURCE_KEY, "")
-                    content = extraction.get(CONTENT_KEY, "")
-                    if content:
-                        rows.append(f"[Source: {source}]\n{content}")
-                present_risks = "\n\n".join(rows)
-        if not present_risks:
-            present_risks = "(no known risks)"
-
-        response = await llm_client.acall(get_hidden_risk_extract_prompt(present_risks, week_report_md))
-        if not response:
-            message = "Hidden risk extraction failed: empty LLM response"
-            logger.error(message)
-            return None, message
-        return _load_json_array_response(response, "Hidden risk extraction"), None
-    except Exception as exc:
-        message = f"Hidden risk extraction failed: {exc}"
-        logger.error(message)
-        return None, message
-
-
 async def process_email_analysis_with_errors(formatted_content: str, email_subject: str) -> tuple[dict[str, Any], list[str]]:
-    """执行完整三段分析，并返回结构化结果和错误列表。"""
+    """执行完整两段分析，并返回结构化结果和错误列表。"""
     start_time = time.time()
     logger.info(f"Starting weekly report analysis: {email_subject}")
 
@@ -225,8 +185,6 @@ async def process_email_analysis_with_errors(formatted_content: str, email_subje
         progress_result, progress_error = progress_response
         risk_result, risk_error = risk_response
 
-        hidden_risk_result, hidden_risk_error = await extract_hidden_risk_from_report(formatted_content, risk_result)
-
         if progress_result is not None:
             result[PROGRESS_KEY] = progress_result
         if progress_error is not None:
@@ -236,11 +194,6 @@ async def process_email_analysis_with_errors(formatted_content: str, email_subje
             result[RISK_KEY] = risk_result
         if risk_error is not None:
             errors.append(risk_error)
-
-        if hidden_risk_result is not None:
-            result[HIDDEN_RISK_KEY] = hidden_risk_result
-        if hidden_risk_error is not None:
-            errors.append(hidden_risk_error)
     except Exception as exc:
         message = f"Weekly report analysis failed for {email_subject}: {exc}"
         logger.error(message)

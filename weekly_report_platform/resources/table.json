@@ -1,0 +1,64 @@
+{
+    "tableId": "XD9FUh1",
+    "tableName": "项目风险管理测试表",
+    "fields": [
+        {
+            "fieldId": "eRukKMn",
+            "fieldName": "项目名称",
+            "type": "text"
+        },
+        {
+            "fieldId": "gJRpJ08",
+            "fieldName": "项目编号",
+            "type": "text"
+        },
+        {
+            "fieldId": "lHQszOK",
+            "fieldName": "项目周报周期",
+            "type": "text"
+        },
+        {
+            "fieldId": "jvlyzfs",
+            "fieldName": "项目进度",
+            "type": "progress",
+            "config": {
+                "formatter": "PERCENT",
+                "min": 0,
+                "max": 1
+            }
+        },
+        {
+            "fieldId": "YLszs2X",
+            "fieldName": "里程碑",
+            "type": "text"
+        },
+        {
+            "fieldId": "hECwejV",
+            "fieldName": "风险详情",
+            "type": "text"
+        },
+        {
+            "fieldId": "kfp4feh",
+            "fieldName": "项目整体进展",
+            "type": "text"
+        },
+        {
+            "fieldId": "BxzULpx",
+            "fieldName": "本周小结",
+            "type": "text"
+        },
+        {
+            "fieldId": "jfog7ow",
+            "fieldName": "下周计划",
+            "type": "text"
+        },
+        {
+            "fieldId": "8IxxVdO",
+            "fieldName": "邮箱抽取日期",
+            "type": "date",
+            "config": {
+                "formatter": "YYYY-MM-DD"
+            }
+        }
+    ]
+}

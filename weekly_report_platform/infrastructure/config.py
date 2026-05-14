@@ -55,17 +55,35 @@ def build_default_fields() -> dict[str, dict[str, object]]:
             "required": False,
             "sourcePath": "message_id",
         },
-        "subject": {
-            "fieldName": "项目周报",
+        "project_name": {
+            "fieldName": "项目名称",
             "type": "text",
             "required": True,
-            "sourcePath": "subject",
+            "sourcePath": "analysis.进度抽取结果.项目名称",
         },
-        "progress_analysis": {
-            "fieldName": "进度分析",
+        "project_code": {
+            "fieldName": "项目编号",
             "type": "text",
-            "required": False,
-            "sourcePath": "analysis.进度抽取结果.分析结果",
+            "required": True,
+            "sourcePath": "analysis.进度抽取结果.项目编号",
+        },
+        "project_cycle": {
+            "fieldName": "项目周报周期",
+            "type": "text",
+            "required": True,
+            "sourcePath": "analysis.进度抽取结果.项目周报周期",
+        },
+        "project_progress": {
+            "fieldName": "项目进度",
+            "type": "progress",
+            "required": True,
+            "sourcePath": "analysis.进度抽取结果.项目进度",
+        },
+        "milestone": {
+            "fieldName": "里程碑",
+            "type": "text",
+            "required": True,
+            "sourcePath": "analysis.进度抽取结果.里程碑",
         },
         "risk_details": {
             "fieldName": "风险详情",
@@ -73,11 +91,29 @@ def build_default_fields() -> dict[str, dict[str, object]]:
             "required": False,
             "sourcePath": "analysis.风险抽取结果.风险详情",
         },
-        "hidden_risks": {
-            "fieldName": "隐藏风险",
+        "overall_progress": {
+            "fieldName": "项目整体进展",
             "type": "text",
             "required": False,
-            "sourcePath": "analysis.隐藏风险",
+            "sourcePath": "analysis.进度抽取结果.综合总结",
+        },
+        "weekly_summary": {
+            "fieldName": "本周小结",
+            "type": "text",
+            "required": False,
+            "sourcePath": "analysis.进度抽取结果.本周小结",
+        },
+        "next_week_plan": {
+            "fieldName": "下周计划",
+            "type": "text",
+            "required": False,
+            "sourcePath": "analysis.进度抽取结果.下周计划",
+        },
+        "extract_date": {
+            "fieldName": "邮箱抽取日期",
+            "type": "date",
+            "required": False,
+            "sourcePath": "processed_at",
         },
     }
 

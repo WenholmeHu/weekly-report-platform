@@ -93,6 +93,7 @@ DINGTALK_CONFIG_PATH=weekly_report_platform/resources/config.local.json
 ## 启动方式
 
 ```powershell
+.venv\Scripts\Activate.ps1
 python -m weekly_report_platform.api.app
 ```
 

@@ -1,0 +1,13 @@
+{
+  "run_id": "run_20260514_090733_56652882",
+  "created_at": "2026-05-14T09:07:33.635359+00:00",
+  "runs_root": "D:\\HundSun\\weekly-report-platform-V1\\weekly-report-platform\\runs",
+  "workspace_root": "D:\\HundSun\\weekly-report-platform-V1\\weekly-report-platform\\runs\\run_20260514_090733_56652882",
+  "mail_output_dir": "D:\\HundSun\\weekly-report-platform-V1\\weekly-report-platform\\runs\\run_20260514_090733_56652882\\mail\\risk_json",
+  "sync_manifest_path": "D:\\HundSun\\weekly-report-platform-V1\\weekly-report-platform\\runs\\run_20260514_090733_56652882\\sync\\sync_manifest.json",
+  "params": {
+    "start_date": "2026-05-11",
+    "subject_keyword": "财通证券新一代UF30",
+    "force_refresh": true
+  }
+}

@@ -28,7 +28,7 @@ def test_wrp_load_dingtalk_targets_reads_project_env(monkeypatch, workspace_tmp_
 
     assert targets[0]["mcp_url"] == "https://example.com/mcp"
     assert targets[0]["fields"]["message_id"]["sourcePath"] == "message_id"
-    assert targets[0]["fields"]["progress_analysis"]["sourcePath"] == "analysis.进度抽取结果.分析结果"
+    assert targets[0]["fields"]["project_progress"]["sourcePath"] == "analysis.进度抽取结果.项目进度"
 
 
 def test_wrp_load_dingtalk_targets_requires_mcp_url(monkeypatch, workspace_tmp_path) -> None:

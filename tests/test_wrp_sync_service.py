@@ -346,3 +346,35 @@ def test_wrp_sync_analysis_records_raises_clear_error_when_no_targets(monkeypatc
             config_path=Path("config.local.json"),
             manifest_path=workspace_tmp_path / "sync" / "sync_manifest.json",
         )
+
+
+def test_wrp_normalize_cell_value_progress_valid() -> None:
+    meta = {"sourcePath": sync_service.PROGRESS_VALUE_PATH}
+    assert sync_service.normalize_cell_value("项目进度", "progress", 0.75, meta) == 0.75
+    assert sync_service.normalize_cell_value("项目进度", "progress", "0.5", meta) == 0.5
+
+
+def test_wrp_normalize_cell_value_date_truncates() -> None:
+    meta = {"sourcePath": "processed_at"}
+    result = sync_service.normalize_cell_value("邮箱抽取日期", "date", "2026-05-14T08:30:00+00:00", meta)
+    assert result == "2026-05-14"
+
+
+def test_wrp_format_risk_section_follows_detail_fields_order() -> None:
+    item = {
+        "序号": 1,
+        "风险类型": "技术风险",
+        "风险等级": "高",
+        "风险描述": "服务器延迟",
+        "风险措施和最新进展": "已采购",
+        "风险责任人": "张三",
+        "计划解决日期": "2026-06-01",
+    }
+    result = sync_service.format_risk_section(item, 0, (
+        sync_service.RISK_TYPE_KEY, sync_service.RISK_LEVEL_KEY, sync_service.RISK_DESC_KEY,
+        sync_service.RISK_ACTION_KEY, sync_service.RISK_OWNER_KEY, sync_service.RISK_DUE_DATE_KEY,
+    ))
+    assert result.startswith("1. 风险类型: 技术风险")
+    assert "风险等级: 高" in result
+    assert "风险描述: 服务器延迟" in result
+    assert "计划解决日期: 2026-06-01" in result

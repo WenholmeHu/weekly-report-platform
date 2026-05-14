@@ -20,9 +20,8 @@ from typing import Any
 from weekly_report_platform.infrastructure.config import load_dingtalk_targets
 
 
-PROGRESS_PATH = "analysis.进度抽取结果.分析结果"
+PROGRESS_VALUE_PATH = "analysis.进度抽取结果.项目进度"
 RISK_DETAIL_PATH = "analysis.风险抽取结果.风险详情"
-HIDDEN_RISK_PATH = "analysis.隐藏风险"
 
 SUMMARY_KEY = "综合总结"
 CONSISTENCY_KEY = "一致性分析"
@@ -31,7 +30,8 @@ RISK_DESC_KEY = "风险描述"
 RISK_TYPE_KEY = "风险类型"
 RISK_ACTION_KEY = "风险措施和最新进展"
 RISK_OWNER_KEY = "风险责任人"
-RISK_SUMMARY_KEY = "风险归纳"
+RISK_LEVEL_KEY = "风险等级"
+RISK_DUE_DATE_KEY = "计划解决日期"
 
 
 @dataclass(frozen=True)
@@ -220,12 +220,16 @@ def format_progress_analysis_text(value: object) -> str:
 
 
 def format_risk_section(item: dict[str, object], index: int, detail_fields: tuple[str, ...]) -> str:
-    """把一条风险对象拼成一段文本。"""
+    """把一条风险对象按指定顺序拼成一段文本。"""
     number = item.get(SEQ_KEY, index + 1)
-    lines = [f"{number}. {RISK_DESC_KEY}: {stringify_text_part(item.get(RISK_DESC_KEY, ''))}"]
+    lines: list[str] = []
     for key in detail_fields:
-        if item.get(key) is not None:
-            lines.append(f"{key}: {stringify_text_part(item[key])}")
+        val = item.get(key)
+        if val is not None:
+            lines.append(f"{key}: {stringify_text_part(val)}")
+    if not lines:
+        return f"{number}. （无风险详情）"
+    lines[0] = f"{number}. {lines[0]}"
     return "\n".join(lines)
 
 
@@ -247,12 +251,8 @@ def format_risk_array_text(value: object, detail_fields: tuple[str, ...]) -> str
 def normalize_text_value(field_meta: dict[str, object], value: object) -> str:
     """按业务字段类型把复杂对象转成钉钉文本字段。"""
     source_path = str(field_meta.get("sourcePath", ""))
-    if source_path == PROGRESS_PATH:
-        return format_progress_analysis_text(value)
     if source_path == RISK_DETAIL_PATH:
-        return format_risk_array_text(value, (RISK_TYPE_KEY, RISK_ACTION_KEY, RISK_OWNER_KEY))
-    if source_path == HIDDEN_RISK_PATH:
-        return format_risk_array_text(value, (RISK_TYPE_KEY, RISK_SUMMARY_KEY, RISK_ACTION_KEY))
+        return format_risk_array_text(value, (RISK_TYPE_KEY, RISK_LEVEL_KEY, RISK_DESC_KEY, RISK_ACTION_KEY, RISK_OWNER_KEY, RISK_DUE_DATE_KEY))
     return stringify_text_part(value)
 
 
@@ -266,10 +266,20 @@ def normalize_cell_value(field_name: str, field_type: str, value: object, field_
         if isinstance(value, str):
             return int(value) if value.isdigit() else float(value)
         raise ValueError(f"invalid number value for field: {field_name}")
+    if field_type == "progress":
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            try:
+                num = float(value)
+                return num
+            except ValueError:
+                raise ValueError(f"invalid progress value for field: {field_name}")
+        raise ValueError(f"invalid progress value for field: {field_name}")
     if field_type == "date":
         if not isinstance(value, str):
             raise ValueError(f"invalid date value for field: {field_name}")
-        return value
+        return value[:10]
     raise ValueError(f"unsupported field type: {field_type}")
 
 
