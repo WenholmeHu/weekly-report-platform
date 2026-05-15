@@ -108,6 +108,8 @@ Rules:
   Convert percentage values (e.g., "75%" -> 0.75) to decimal form.
 - For other fields, extract from the email content and attachments as appropriate.
 - For "项目整体进展", locate the "项目整体进展概况" field in the Excel weekly report attachment (typically in the "项目周报" sheet). Extract the original text faithfully — do NOT invent or summarize beyond what is written. Preserve paragraph/line separation for readability. If no such field exists, write a brief summary based on the email body/attachments.
+- For "本周小结", locate the "本周小结" or "本周进展小结" field in the Excel weekly report attachment (typically in the "项目周报" sheet). Extract the original text faithfully — do NOT invent, rewrite, or summarize. Preserve line separation for readability. Within each item, replace multiple consecutive spaces with a single comma for readability in table cells. If no such field exists in the attachment, extract the corresponding weekly summary section from the email body instead.
+- For "下周计划", locate the "下周计划" or "下周工作计划" field in the Excel weekly report attachment (typically in the "项目周报" sheet). Extract the original text faithfully — do NOT invent, rewrite, or summarize. Preserve line separation for readability. Within each item, replace multiple consecutive spaces with a single comma for readability in table cells. If no such field exists in the attachment, extract the corresponding next-week plan section from the email body instead.
 
 Input:
 {formatted_full_text}
