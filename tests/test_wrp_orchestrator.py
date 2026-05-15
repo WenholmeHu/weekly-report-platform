@@ -107,7 +107,7 @@ def test_orchestrator_marks_item_failed_when_sync_raises(monkeypatch, workspace_
     assert updated_task.items[0].reason == "同步失败"
 
 
-def test_orchestrator_skips_message_already_processed_locally(monkeypatch, workspace_tmp_path: Path) -> None:
+def test_orchestrator_reprocesses_message_with_force_refresh(monkeypatch, workspace_tmp_path: Path) -> None:
     task = _build_task(workspace_tmp_path)
     processed_state_path = workspace_tmp_path / ".state" / "processed_message_ids.json"
     manager = TaskManager(
@@ -121,25 +121,38 @@ def test_orchestrator_skips_message_already_processed_locally(monkeypatch, works
     processed_state_path.parent.mkdir(parents=True, exist_ok=True)
     processed_state_path.write_text('["<msg-1>"]', encoding="utf-8")
 
+    async def fake_analyze_email(**_: object) -> MailAnalysisItemResult:
+        return MailAnalysisItemResult(
+            message_id="<msg-1>",
+            subject="周报A",
+            payload={
+                "message_id": "<msg-1>",
+                "subject": "周报A",
+                "processed_at": "2026-04-30T08:00:00+08:00",
+                "analysis": {},
+                "errors": "",
+            },
+            output_path=task.mail_output_dir / "msg-1.json",
+        )
+
     monkeypatch.setattr(
         "weekly_report_platform.runtime.mail_pipeline_service.fetch_candidate_emails",
         lambda **_: [{"id": "1", "message_id": "<msg-1>", "subject": "周报A"}],
     )
     monkeypatch.setattr(
         "weekly_report_platform.runtime.mail_pipeline_service.analyze_email",
-        lambda **_: (_ for _ in ()).throw(AssertionError("processed mail should not be analyzed again")),
+        fake_analyze_email,
     )
     monkeypatch.setattr(
         "weekly_report_platform.runtime.sync_service.sync_analysis_record",
-        lambda *_, **__: (_ for _ in ()).throw(AssertionError("processed mail should not sync again")),
+        lambda *_, **__: type("Result", (), {"status": "synced"})(),
     )
 
     manager._run_task(task.run_id)
     updated_task = manager.get_task(task.run_id)
 
     assert updated_task is not None
-    assert updated_task.items[0].status == "skipped"
-    assert updated_task.items[0].reason == "本地已处理过"
+    assert updated_task.items[0].status == "synced"
 
 
 def test_orchestrator_can_stop_after_current_item(monkeypatch, workspace_tmp_path: Path) -> None:

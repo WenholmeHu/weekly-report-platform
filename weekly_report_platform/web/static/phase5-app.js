@@ -14,15 +14,6 @@ const STATUS_LABELS = {
   unknown: "未知",
 };
 
-const ITEM_STATUS_LABELS = {
-  queued: "等待处理",
-  analyzing: "分析中",
-  syncing: "写入中",
-  synced: "已完成",
-  skipped: "已跳过",
-  failed: "失败",
-};
-
 const taskForm = document.querySelector("#task-form");
 const submitButton = document.querySelector("#submit-button");
 const stopTaskButton = document.querySelector("#stop-task-button");
@@ -30,9 +21,6 @@ const runIdValue = document.querySelector("#run-id-value");
 const taskStatusValue = document.querySelector("#task-status-value");
 const taskStatusNote = document.querySelector("#task-status-note");
 const messageBanner = document.querySelector("#message-banner");
-const statusCard = document.querySelector(".status-card-primary");
-const mailItemsList = document.querySelector("#mail-items-list");
-const mailItemsEmpty = document.querySelector("#mail-items-empty");
 
 const summaryFields = {
   total_emails: document.querySelector('[data-field="total_emails"]'),
@@ -41,6 +29,18 @@ const summaryFields = {
   skipped_count: document.querySelector('[data-field="skipped_count"]'),
   failed_count: document.querySelector('[data-field="failed_count"]'),
 };
+
+const currentEmpty = document.querySelector("#current-empty");
+const currentInfo = document.querySelector("#current-info");
+const currentSubject = document.querySelector("#current-subject");
+const currentStage = document.querySelector("#current-stage");
+
+const anomalyEmpty = document.querySelector("#anomaly-empty");
+const anomalyList = document.querySelector("#anomaly-list");
+const anomalyFailedSection = document.querySelector("#anomaly-failed-section");
+const anomalyFailedList = document.querySelector("#anomaly-failed-list");
+const anomalySkippedSection = document.querySelector("#anomaly-skipped-section");
+const anomalySkippedList = document.querySelector("#anomaly-skipped-list");
 
 let pollTimer = null;
 let taskBusy = false;
@@ -51,21 +51,11 @@ function translateStatus(status) {
   return STATUS_LABELS[status] || STATUS_LABELS.unknown;
 }
 
-function translateItemStatus(status) {
-  return ITEM_STATUS_LABELS[status] || "处理中";
-}
-
 function setBanner(message, tone = "") {
   messageBanner.textContent = message;
   messageBanner.className = "message-banner";
-  if (statusCard) {
-    statusCard.className = "status-card status-card-primary";
-  }
   if (tone) {
     messageBanner.classList.add(`is-${tone}`);
-    if (statusCard) {
-      statusCard.classList.add(`is-${tone}`);
-    }
   }
 }
 
@@ -79,36 +69,59 @@ function resetSummary() {
   });
 }
 
-function renderMailItems(items) {
-  mailItemsList.innerHTML = "";
-  if (!Array.isArray(items) || items.length === 0) {
-    mailItemsEmpty.hidden = false;
+function renderCurrentItem(currentItem) {
+  if (!currentItem) {
+    currentEmpty.hidden = false;
+    currentInfo.hidden = true;
+    return;
+  }
+  currentEmpty.hidden = true;
+  currentInfo.hidden = false;
+  currentSubject.textContent = currentItem.subject || "未命名邮件";
+  currentStage.textContent = currentItem.stage || "处理中";
+}
+
+function renderAnomalyItems(failedItems, skippedItems) {
+  const hasFailed = Array.isArray(failedItems) && failedItems.length > 0;
+  const hasSkipped = Array.isArray(skippedItems) && skippedItems.length > 0;
+
+  if (!hasFailed && !hasSkipped) {
+    anomalyEmpty.hidden = false;
+    anomalyEmpty.textContent = "暂无异常内容";
+    anomalyList.hidden = true;
     return;
   }
 
-  mailItemsEmpty.hidden = true;
-  items.forEach((item) => {
-    const row = document.createElement("article");
-    row.className = "mail-item-row";
+  anomalyEmpty.hidden = true;
+  anomalyList.hidden = false;
 
-    const subject = document.createElement("strong");
-    subject.className = "mail-item-subject";
-    subject.textContent = item.subject || "未命名邮件";
+  if (hasFailed) {
+    anomalyFailedSection.hidden = false;
+    anomalyFailedList.innerHTML = "";
+    failedItems.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "anomaly-item is-failed";
+      li.innerHTML = `<strong>${item.subject || "未命名邮件"}</strong><span class="anomaly-reason">${item.reason || "未知原因"}</span>`;
+      anomalyFailedList.append(li);
+    });
+  } else {
+    anomalyFailedSection.hidden = true;
+    anomalyFailedList.innerHTML = "";
+  }
 
-    const status = document.createElement("span");
-    status.className = `mail-item-status is-${item.status || "queued"}`;
-    status.textContent = translateItemStatus(item.status || "queued");
-    row.append(subject, status);
-
-    if (item.reason) {
-      const reason = document.createElement("p");
-      reason.className = "mail-item-reason";
-      reason.textContent = item.reason;
-      row.append(reason);
-    }
-
-    mailItemsList.append(row);
-  });
+  if (hasSkipped) {
+    anomalySkippedSection.hidden = false;
+    anomalySkippedList.innerHTML = "";
+    skippedItems.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "anomaly-item is-skipped";
+      li.innerHTML = `<strong>${item.subject || "未命名邮件"}</strong><span class="anomaly-reason">${item.reason || "已跳过"}</span>`;
+      anomalySkippedList.append(li);
+    });
+  } else {
+    anomalySkippedSection.hidden = true;
+    anomalySkippedList.innerHTML = "";
+  }
 }
 
 function syncLockState() {
@@ -146,7 +159,8 @@ function renderTask(task) {
     node.textContent = String(summary[key] ?? 0);
   });
 
-  renderMailItems(task.items || []);
+  renderCurrentItem(task.current_item);
+  renderAnomalyItems(task.failed_items || [], task.skipped_items || []);
   setTaskLocked(RUNNING_STATUSES.includes(status));
 
   if (status === "stopped") {
@@ -180,8 +194,9 @@ function renderIdleTask() {
   taskStatusValue.textContent = translateStatus("idle");
   setStatusNote("当前没有运行中的任务");
   setBanner("等待执行", "");
-  renderMailItems([]);
   resetSummary();
+  renderCurrentItem(null);
+  renderAnomalyItems([], []);
   setTaskLocked(false);
 }
 
@@ -221,7 +236,6 @@ function buildTaskPayload(formData) {
   return {
     start_date: String(formData.get("start_date") || "").trim(),
     subject_keyword: String(formData.get("subject_keyword") || "").trim(),
-    force_refresh: formData.get("force_refresh") === "on",
     max_emails: rawMaxEmails ? Number(rawMaxEmails) : null,
   };
 }
@@ -238,7 +252,8 @@ taskForm.addEventListener("submit", async (event) => {
   syncLockState();
   stopPolling();
   resetSummary();
-  renderMailItems([]);
+  renderCurrentItem(null);
+  renderAnomalyItems([], []);
   runIdValue.textContent = "-";
   runIdValue.title = "-";
   taskStatusValue.textContent = translateStatus("pending");

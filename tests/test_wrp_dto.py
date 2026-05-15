@@ -3,26 +3,11 @@
 from weekly_report_platform.runtime import TaskRequest
 
 
-def test_wrp_task_request_from_dict_parses_force_refresh_string_false() -> None:
-    # 防止字符串 "false" 被错误解析成 True。
+def test_wrp_task_request_force_refresh_always_true() -> None:
     request = TaskRequest.from_dict(
         {
             "start_date": "2026-05-01",
             "subject_keyword": "周报",
-            "force_refresh": "false",
-        }
-    )
-
-    assert request.force_refresh is False
-
-
-def test_wrp_task_request_from_dict_parses_force_refresh_string_true() -> None:
-    # 页面 checkbox/脚本输入常见的 "on" 也应被识别为 True。
-    request = TaskRequest.from_dict(
-        {
-            "start_date": "2026-05-01",
-            "subject_keyword": "周报",
-            "force_refresh": "on",
         }
     )
 
@@ -34,7 +19,6 @@ def test_wrp_task_request_from_dict_parses_optional_max_emails() -> None:
         {
             "start_date": "2026-05-01",
             "subject_keyword": "周报",
-            "force_refresh": False,
             "max_emails": "1",
         }
     )
@@ -47,7 +31,6 @@ def test_wrp_task_request_from_dict_treats_empty_max_emails_as_unlimited() -> No
         {
             "start_date": "2026-05-01",
             "subject_keyword": "周报",
-            "force_refresh": False,
             "max_emails": "",
         }
     )
@@ -60,7 +43,6 @@ def test_wrp_task_request_from_dict_treats_empty_start_date_as_unlimited_history
         {
             "start_date": "",
             "subject_keyword": "",
-            "force_refresh": False,
             "max_emails": "",
         }
     )

@@ -125,7 +125,7 @@ class TaskRequest:
 
     start_date: str | None
     subject_keyword: str = "周报"
-    force_refresh: bool = False
+    force_refresh: bool = True
     max_emails: int | None = None
 
     @classmethod
@@ -133,7 +133,7 @@ class TaskRequest:
         return cls(
             start_date=_coerce_optional_text(payload.get("start_date")),
             subject_keyword=_coerce_subject_keyword(payload.get("subject_keyword", "周报")),
-            force_refresh=_coerce_bool(payload.get("force_refresh", False)),
+            force_refresh=True,
             max_emails=_coerce_optional_positive_int(
                 payload.get(
                     "max_emails",
@@ -175,11 +175,34 @@ class TaskState:
     items: list[TaskItemState] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        current_item = None
+        failed_items: list[dict[str, str]] = []
+        skipped_items: list[dict[str, str]] = []
+
+        for item in self.items:
+            if item.status in {"analyzing", "syncing"}:
+                current_item = {
+                    "subject": item.subject or "未命名邮件",
+                    "stage": "信息提取中" if item.status == "analyzing" else "钉钉表同步中",
+                }
+            if item.status == "failed":
+                failed_items.append({
+                    "subject": item.subject or "未命名邮件",
+                    "reason": item.reason or "未知原因",
+                })
+            if item.status == "skipped":
+                skipped_items.append({
+                    "subject": item.subject or "未命名邮件",
+                    "reason": item.reason or "已跳过",
+                })
+
         return {
             "run_id": self.run_id,
             "status": self.status,
             "summary": _task_summary(self.items),
-            "items": [asdict(item) for item in self.items],
+            "current_item": current_item,
+            "failed_items": failed_items,
+            "skipped_items": skipped_items,
         }
 
 
