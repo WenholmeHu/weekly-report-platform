@@ -1,3 +1,42 @@
-.venv
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment and secrets
 .env
-**/__pycache__/
+.env.*
+!.env.example
+
+# Build and packaging output
+build/
+dist/
+*.egg-info/
+
+# Project runtime artifacts
+runs/
+.state/
+.tmp_testdata/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Editor, IDE, and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

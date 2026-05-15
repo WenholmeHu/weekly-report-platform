@@ -13,8 +13,6 @@ from weekly_report_platform.infrastructure.logging import logger
 
 PROGRESS_KEY = "进度抽取结果"
 RISK_KEY = "风险抽取结果"
-ANALYSIS_RESULT_KEY = "分析结果"
-SUMMARY_KEY = "综合总结"
 CONSISTENCY_KEY = "一致性分析"
 RAW_EXTRACT_KEY = "原文抽取"
 RISK_DETAIL_KEY = "风险详情"
@@ -50,9 +48,32 @@ def clean_json_response(response: str) -> str:
     return cleaned_response.strip()
 
 
+def _extract_first_json_object(text: str) -> str:
+    """从文本中用大括号匹配提取第一个完整 JSON 对象。"""
+    first_brace = text.find("{")
+    if first_brace == -1:
+        return text
+    depth = 0
+    for i in range(first_brace, len(text)):
+        ch = text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[first_brace : i + 1]
+    return text
+
+
 def _load_json_object_response(response: str, stage_name: str) -> dict[str, Any]:
     """把模型输出解析成 JSON object。"""
-    parsed = json.loads(clean_json_response(response))
+    try:
+        parsed = json.loads(clean_json_response(response))
+    except json.JSONDecodeError as exc:
+        # LLM 可能在 JSON 对象后附带解释文字，导致 "Extra data" 错误。
+        # 用大括号匹配提取第一个完整 JSON 对象再试。
+        cleaned = clean_json_response(response)
+        parsed = json.loads(_extract_first_json_object(cleaned))
     if not isinstance(parsed, dict):
         raise ValueError(f"{stage_name} response must be a JSON object")
     return parsed
@@ -86,6 +107,7 @@ Rules:
   Look for progress indicators like "项目PC", "项目进度" in the email body or attachments.
   Convert percentage values (e.g., "75%" -> 0.75) to decimal form.
 - For other fields, extract from the email content and attachments as appropriate.
+- For "项目整体进展", locate the "项目整体进展概况" field in the Excel weekly report attachment (typically in the "项目周报" sheet). Extract the original text faithfully — do NOT invent or summarize beyond what is written. Preserve paragraph/line separation for readability. If no such field exists, write a brief summary based on the email body/attachments.
 
 Input:
 {formatted_full_text}
@@ -95,15 +117,13 @@ Output JSON schema:
   "{RAW_EXTRACT_KEY}": [
     {{"{SOURCE_KEY}": "body-or-attachment", "{CONTENT_KEY}": "excerpt"}}
   ],
-  "{ANALYSIS_RESULT_KEY}": {{
-    "{SUMMARY_KEY}": "concise summary",
-    "{CONSISTENCY_KEY}": "consistency result"
-  }},
+  "{CONSISTENCY_KEY}": "consistency result",
   "{PROJECT_NAME_KEY}": "project name",
   "{PROJECT_CODE_KEY}": "project code",
   "{PROJECT_CYCLE_KEY}": "project weekly report cycle (e.g. 2026-05-12 ~ 2026-05-18)",
   "{PROJECT_PROGRESS_KEY}": 0.75,
   "{MILESTONE_KEY}": "key milestone information",
+  "项目整体进展": "extracted text from Excel 项目整体进展概况, or brief summary if unavailable",
   "{WEEKLY_SUMMARY_KEY}": "this week summary",
   "{NEXT_WEEK_PLAN_KEY}": "next week plan"
 }}

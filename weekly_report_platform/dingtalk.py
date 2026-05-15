@@ -23,7 +23,6 @@ from weekly_report_platform.infrastructure.config import load_dingtalk_targets
 PROGRESS_VALUE_PATH = "analysis.进度抽取结果.项目进度"
 RISK_DETAIL_PATH = "analysis.风险抽取结果.风险详情"
 
-SUMMARY_KEY = "综合总结"
 CONSISTENCY_KEY = "一致性分析"
 SEQ_KEY = "序号"
 RISK_DESC_KEY = "风险描述"
@@ -200,23 +199,6 @@ def stringify_text_part(value: object) -> str:
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return str(value)
-
-
-def format_progress_analysis_text(value: object) -> str:
-    """把进度分析对象格式化成适合写入单个文本单元格的字符串。"""
-    if isinstance(value, str):
-        return value
-    if not isinstance(value, dict):
-        return stringify_text_part(value)
-
-    lines: list[str] = []
-    for key in (SUMMARY_KEY, CONSISTENCY_KEY):
-        if key in value and value[key] is not None:
-            lines.append(f"{key}: {stringify_text_part(value[key])}")
-    for key, item_value in value.items():
-        if key not in {SUMMARY_KEY, CONSISTENCY_KEY} and item_value is not None:
-            lines.append(f"{key}: {stringify_text_part(item_value)}")
-    return "\n".join(lines)
 
 
 def format_risk_section(item: dict[str, object], index: int, detail_fields: tuple[str, ...]) -> str:

@@ -14,6 +14,7 @@ import os
 import poplib
 import re
 import tempfile
+import warnings
 from datetime import datetime
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
@@ -374,7 +375,9 @@ def _parse_excel_attachment(attachment: dict[str, Any]) -> str:
         data = attachment.get("data")
         if not data:
             return ""
-        workbook = load_workbook(io.BytesIO(data), data_only=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+            workbook = load_workbook(io.BytesIO(data), data_only=True)
         sections: list[str] = []
         for sheet in workbook.worksheets:
             rows = [[_process_cell_value(cell) for cell in row] for row in sheet.iter_rows()]

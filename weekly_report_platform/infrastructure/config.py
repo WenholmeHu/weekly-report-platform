@@ -95,7 +95,7 @@ def build_default_fields() -> dict[str, dict[str, object]]:
             "fieldName": "项目整体进展",
             "type": "text",
             "required": False,
-            "sourcePath": "analysis.进度抽取结果.综合总结",
+            "sourcePath": "analysis.进度抽取结果.项目整体进展",
         },
         "weekly_summary": {
             "fieldName": "本周小结",
