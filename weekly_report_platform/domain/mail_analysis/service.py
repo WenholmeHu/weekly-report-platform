@@ -21,17 +21,6 @@ from weekly_report_platform.infrastructure.logging import logger
 
 
 @dataclass(frozen=True)
-class MailRiskPipelineRequest:
-    """批量邮件分析阶段的输入参数。"""
-
-    start_date: str | None
-    subject_keyword: str = "周报"
-    output_dir: Path | None = None
-    force_refresh: bool = False
-    max_emails: int | None = None
-
-
-@dataclass(frozen=True)
 class MailAnalysisItemResult:
     """单封邮件分析结果。
 
@@ -50,17 +39,6 @@ class MailAnalysisItemResult:
     output_path: Path | None
     analysis_error: str = ""
     reused_existing: bool = False
-
-
-@dataclass(frozen=True)
-class MailRiskPipelineResult:
-    """一批邮件分析的汇总结果。"""
-
-    total: int
-    processed: int
-    skipped: int
-    failed: int
-    items: list[MailAnalysisItemResult]
 
 
 def _sanitize_filename(name: str) -> str:
@@ -112,19 +90,6 @@ def write_analysis_artifact(output_path: Path, payload: dict[str, Any]) -> None:
     """把分析结果写到磁盘。"""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def validate_output_dir(output_dir: Path | None) -> None:
-    """防止占位目录原样传入。"""
-    if output_dir is None:
-        return
-
-    output_dir_text = str(output_dir)
-    if "<run_id>" in output_dir_text:
-        raise ValueError(
-            "output_dir still contains the placeholder '<run_id>'; replace <run_id> with a real run id, "
-            "for example 'run_20260429_162500_demo'."
-        )
 
 
 def fetch_candidate_emails(
@@ -227,40 +192,3 @@ async def analyze_email(
         )
 
 
-async def run_mail_risk_pipeline(request: MailRiskPipelineRequest) -> MailRiskPipelineResult:
-    """执行“抓邮件 -> 分析 -> 落 artifact”这一段流程。"""
-    validate_output_dir(request.output_dir)
-
-    emails = fetch_candidate_emails(
-        start_date=request.start_date,
-        subject_keyword=request.subject_keyword,
-        max_emails=request.max_emails,
-    )
-
-    processed = 0
-    skipped = 0
-    failed = 0
-    items: list[MailAnalysisItemResult] = []
-
-    for email_data in emails:
-        item = await analyze_email(
-            email_data=email_data,
-            output_dir=request.output_dir,
-            force_refresh=request.force_refresh,
-        )
-        items.append(item)
-        if item.analysis_error:
-            failed += 1
-        elif item.reused_existing:
-            skipped += 1
-        else:
-            processed += 1
-
-    logger.info(f"Mail risk pipeline completed: processed={processed}, skipped={skipped}, failed={failed}")
-    return MailRiskPipelineResult(
-        total=len(emails),
-        processed=processed,
-        skipped=skipped,
-        failed=failed,
-        items=items,
-    )

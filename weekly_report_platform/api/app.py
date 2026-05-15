@@ -47,7 +47,6 @@ def _build_task_payload(payload: dict[str, object] | None = None) -> dict[str, o
     return {
         "start_date": payload.get("start_date"),
         "subject_keyword": payload.get("subject_keyword", "周报"),
-        "force_refresh": payload.get("force_refresh", False),
         "max_emails": payload.get("max_emails"),
     }
 

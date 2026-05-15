@@ -14,7 +14,6 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 RESOURCES_ROOT = PACKAGE_ROOT / "resources"
 DEFAULT_DINGTALK_CONFIG_PATH = RESOURCES_ROOT / "config.local.json"
 DEFAULT_PROCESSED_STATE_PATH = PROJECT_ROOT / ".state" / "processed_message_ids.json"
-DEFAULT_AUTOMATION_STATE_PATH = PROJECT_ROOT / ".state" / "automation_config.json"
 
 
 def load_project_env() -> None:

@@ -40,3 +40,5 @@ runs/
 .idea/
 .DS_Store
 Thumbs.db
+
+.state

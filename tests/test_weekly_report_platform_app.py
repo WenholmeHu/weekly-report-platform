@@ -100,7 +100,6 @@ def test_create_app_manual_start_uses_request_payload(monkeypatch) -> None:
     assert manager.last_payload == {
         "start_date": "2026-05-03",
         "subject_keyword": "项目周报",
-        "force_refresh": True,
         "max_emails": 1,
     }
 
@@ -124,7 +123,6 @@ def test_create_app_manual_start_accepts_empty_optional_filters(monkeypatch) -> 
     assert manager.last_payload == {
         "start_date": "",
         "subject_keyword": "",
-        "force_refresh": False,
         "max_emails": None,
     }
 
